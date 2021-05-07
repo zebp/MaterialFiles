@@ -93,6 +93,9 @@ private val mimeTypeToIntentMimeTypeMap = listOf(
     "application/typescript" to "text/typescript",
     "application/x-sh" to "text/x-shellscript",
     "application/x-shellscript" to "text/x-shellscript",
+    // TODO: Figure out how to make this less hacky.
+    "video/mp4" to "image/mp4",
+    "video/webm" to "video/webm",
     // Allows matching generic
     MimeType.GENERIC.value to MimeType.ANY.value
 ).associate { it.first.asMimeType() to it.second.asMimeType() }

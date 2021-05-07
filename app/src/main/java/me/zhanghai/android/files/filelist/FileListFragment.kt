@@ -58,12 +58,7 @@ import me.zhanghai.android.files.databinding.FileListFragmentBottomBarIncludeBin
 import me.zhanghai.android.files.databinding.FileListFragmentContentIncludeBinding
 import me.zhanghai.android.files.databinding.FileListFragmentIncludeBinding
 import me.zhanghai.android.files.databinding.FileListFragmentSpeedDialIncludeBinding
-import me.zhanghai.android.files.file.FileItem
-import me.zhanghai.android.files.file.MimeType
-import me.zhanghai.android.files.file.asMimeTypeOrNull
-import me.zhanghai.android.files.file.fileProviderUri
-import me.zhanghai.android.files.file.isApk
-import me.zhanghai.android.files.file.isImage
+import me.zhanghai.android.files.file.*
 import me.zhanghai.android.files.filejob.FileJobService
 import me.zhanghai.android.files.filelist.FileSortOptions.By
 import me.zhanghai.android.files.filelist.FileSortOptions.Order
@@ -1093,7 +1088,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
     }
 
     private fun maybeAddImageViewerActivityExtras(intent: Intent, path: Path, mimeType: MimeType) {
-        if (!mimeType.isImage) {
+        if (!mimeType.isImage && !mimeType.isVideo) {
             return
         }
         var paths = mutableListOf<Path>()
@@ -1101,7 +1096,7 @@ class FileListFragment : Fragment(), BreadcrumbLayout.Listener, FileListAdapter.
         for (index in 0 until adapter.itemCount) {
             val file = adapter.getItem(index)
             val filePath = file.path
-            if (file.mimeType.isImage || filePath == path) {
+            if (file.mimeType.isImage || file.mimeType.isVideo || filePath == path) {
                 paths.add(filePath)
             }
         }

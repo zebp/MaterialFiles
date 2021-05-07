@@ -114,7 +114,7 @@ class ImageViewerAdapter(
 
                 player.repeatMode = REPEAT_MODE_ALL
                 player.playWhenReady = true
-                player.setMediaItem(MediaItem.fromUri("file://" + path.toAbsolutePath().toString()))
+                player.setMediaItem(MediaItem.fromUri(path.fileProviderUri))
                 player.prepare()
                 player.play()
             }

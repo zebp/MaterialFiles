@@ -18,6 +18,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
+import com.google.android.exoplayer2.Player
 import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
 import java8.nio.file.Path
 import kotlinx.parcelize.Parcelize
@@ -101,7 +102,12 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         // This will set up window flags.
         systemUiHelper.show()
         adapter = ImageViewerAdapter(viewLifecycleOwner) { systemUiHelper.toggle() }
-        adapter.replace(paths)
+
+        val items = paths.map {
+            ImageViewerAdapter.ViewerItem(it, PlayerWrapper())
+        }
+
+        adapter.replace(items)
         binding.viewPager.adapter = adapter
         // ViewPager saves its position and will restore it later.
         binding.viewPager.setCurrentItem(args.position, false)
@@ -109,6 +115,9 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         binding.viewPager.registerOnPageChangeCallback(object : ViewPager2.OnPageChangeCallback() {
             override fun onPageSelected(position: Int) {
                 updateTitle()
+
+                val item = adapter.getItem(position)
+                item.player.resume()
             }
         })
     }
@@ -167,7 +176,9 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             finish()
             return
         }
-        adapter.replace(paths)
+        adapter.replace(paths.map {
+            ImageViewerAdapter.ViewerItem(it, PlayerWrapper())
+        })
         // ViewPager only asynchronously sets current item to 0, which isn't a desirable behavior
         // for us and will make updateTitle() crash for index out of bounds.
         if (binding.viewPager.currentItem > paths.lastIndex) {

@@ -8,7 +8,6 @@ package me.zhanghai.android.files.viewer.image
 import android.graphics.BitmapFactory
 import android.view.View
 import android.view.ViewGroup
-import android.widget.MediaController
 import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.lifecycleScope
@@ -16,13 +15,10 @@ import androidx.recyclerview.widget.RecyclerView
 import coil.clear
 import coil.loadAny
 import coil.size.OriginalSize
-import coil.size.PixelSize
-import coil.transition.CrossfadeTransition
 import com.davemorrissey.labs.subscaleview.ImageSource
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView
 import com.davemorrissey.labs.subscaleview.SubsamplingScaleImageView.DefaultOnImageEventListener
 import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.Player.REPEAT_MODE_ALL
 import com.google.android.exoplayer2.SimpleExoPlayer
 import java8.nio.file.Path
@@ -43,7 +39,7 @@ import kotlin.math.max
 class ImageViewerAdapter(
     private val lifecycleOwner: LifecycleOwner,
     private val listener: (View) -> Unit
-) : SimpleAdapter<Path, ImageViewerAdapter.ViewHolder>() {
+) : SimpleAdapter<ImageViewerAdapter.ViewerItem, ImageViewerAdapter.ViewHolder>() {
     override val hasStableIds: Boolean
         get() = true
 
@@ -53,12 +49,12 @@ class ImageViewerAdapter(
         ViewHolder(ImageViewerItemBinding.inflate(parent.context.layoutInflater, parent, false))
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val path = getItem(position)
+        val item = getItem(position)
         val binding = holder.binding
         binding.image.setOnPhotoTapListener { view, _, _ -> listener(view) }
         binding.video.setOnClickListener(listener)
         binding.largeImage.setOnClickListener(listener)
-        loadImage(binding, path)
+        loadImage(binding, item)
     }
 
     override fun onViewRecycled(holder: ViewHolder) {
@@ -70,7 +66,17 @@ class ImageViewerAdapter(
         binding.video.player?.release()
     }
 
-    private fun loadImage(binding: ImageViewerItemBinding, path: Path) {
+    override fun onViewAttachedToWindow(holder: ViewHolder) {
+        val item = getItem(holder.bindingAdapterPosition)
+        item.player.resume()
+    }
+
+    override fun onViewDetachedFromWindow(holder: ViewHolder) {
+        val item = getItem(holder.bindingAdapterPosition)
+        item.player.pause()
+    }
+
+    private fun loadImage(binding: ImageViewerItemBinding, item: ViewerItem) {
         binding.progress.fadeInUnsafe(true)
         binding.errorText.fadeOutUnsafe()
         binding.video.isVisible = false
@@ -78,13 +84,13 @@ class ImageViewerAdapter(
         binding.largeImage.isVisible = false
         lifecycleOwner.lifecycleScope.launch {
             val imageInfo = try {
-                withContext(Dispatchers.IO) { path.loadImageInfo() }
+                withContext(Dispatchers.IO) { item.path.loadImageInfo() }
             } catch (e: Exception) {
                 e.printStackTrace()
                 showError(binding, e)
                 return@launch
             }
-            loadImageWithInfo(binding, path, imageInfo)
+            loadImageWithInfo(binding, item, imageInfo)
         }
     }
 
@@ -101,27 +107,19 @@ class ImageViewerAdapter(
 
     private fun loadImageWithInfo(
         binding: ImageViewerItemBinding,
-        path: Path,
+        item: ViewerItem,
         imageInfo: ImageInfo
     ) {
         when {
             imageInfo.mimeType.isVideo -> {
-                val player = SimpleExoPlayer.Builder(binding.video.context).build();
-                binding.video.player = player
-                binding.video.apply {
-                    isVisible = true
-                }
-
-                player.repeatMode = REPEAT_MODE_ALL
-                player.playWhenReady = true
-                player.setMediaItem(MediaItem.fromUri(path.fileProviderUri))
-                player.prepare()
-                player.play()
+                item.player.create(binding.video.context, item.path.fileProviderUri)
+                binding.video.isVisible = true
+                binding.video.player = item.player.player
             }
             imageInfo.shouldUseLargeImageView -> {
                 binding.image.apply {
                     isVisible = true
-                    loadAny(path to imageInfo.attributes) {
+                    loadAny(item.path to imageInfo.attributes) {
                         size(OriginalSize)
                         fadeIn(context.shortAnimTime)
                         listener(
@@ -150,7 +148,7 @@ class ImageViewerAdapter(
                             showError(binding, e)
                         }
                     })
-                    setImageRestoringSavedState(ImageSource.uri(path.fileProviderUri))
+                    setImageRestoringSavedState(ImageSource.uri(item.path.fileProviderUri))
                 }
             }
         }
@@ -202,6 +200,8 @@ class ImageViewerAdapter(
         // @see android.graphics.RecordingCanvas#MAX_BITMAP_SIZE
         private const val MAX_BITMAP_SIZE = 100 * 1024 * 1024
     }
+
+    class ViewerItem(val path: Path, var player: PlayerWrapper)
 
     class ViewHolder(val binding: ImageViewerItemBinding) : RecyclerView.ViewHolder(binding.root)
 

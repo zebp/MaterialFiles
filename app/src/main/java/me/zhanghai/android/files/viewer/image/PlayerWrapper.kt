@@ -7,6 +7,11 @@ import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 
 class PlayerWrapper {
+    /**
+     * If the player should be marked to play when ready, this prevents a logical data race where
+     * the video tapped on doesn't auto play.
+     */
+    var autoPlayWhenReady = false
     var player: SimpleExoPlayer? = null
 
     fun create(context: Context, uri: Uri) {
@@ -15,8 +20,14 @@ class PlayerWrapper {
             repeatMode = Player.REPEAT_MODE_ALL
         }
 
-        player.setMediaItem(MediaItem.fromUri(uri))
-        player.prepare()
+        player.apply {
+            if (autoPlayWhenReady) {
+                playWhenReady = autoPlayWhenReady
+            }
+
+            setMediaItem(MediaItem.fromUri(uri))
+            prepare()
+        }
 
         this.player = player
     }
@@ -35,5 +46,9 @@ class PlayerWrapper {
 
     fun release() {
         this.player?.release()
+    }
+
+    fun markForInitialAutoPlay() {
+        if (this.player == null) autoPlayWhenReady = true
     }
 }

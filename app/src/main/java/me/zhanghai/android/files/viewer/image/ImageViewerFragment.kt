@@ -7,6 +7,7 @@ package me.zhanghai.android.files.viewer.image
 
 import android.content.Intent
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.Menu
@@ -14,11 +15,11 @@ import android.view.MenuInflater
 import android.view.MenuItem
 import android.view.View
 import android.view.ViewGroup
+import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.Fragment
 import androidx.interpolator.view.animation.FastOutSlowInInterpolator
 import androidx.viewpager2.widget.ViewPager2
-import com.google.android.exoplayer2.Player
 import dev.chrisbanes.insetter.applySystemWindowInsetsToPadding
 import java8.nio.file.Path
 import kotlinx.parcelize.Parcelize
@@ -49,7 +50,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     private val args by args<Args>()
     private val argsPaths by lazy { args.intent.extraPathList }
 
-    private lateinit var paths: MutableList<Path>
+    private lateinit var items: MutableList<ImageViewerAdapter.ViewerItem>
 
     private lateinit var binding: ImageViewerFragmentBinding
 
@@ -60,9 +61,18 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        paths = (savedInstanceState?.getState<State>()?.paths ?: argsPaths).toMutableList()
+        items = (savedInstanceState?.getState<State>()?.paths ?: argsPaths).map {
+            ImageViewerAdapter.ViewerItem(it as Path, PlayerWrapper())
+        }.toMutableList()
 
         setHasOptionsMenu(true)
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+
+        // Clean up any lingering players.
+        items.forEach { it.player.release() }
     }
 
     override fun onCreateView(
@@ -77,7 +87,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onActivityCreated(savedInstanceState: Bundle?) {
         super.onActivityCreated(savedInstanceState)
 
-        if (paths.isEmpty()) {
+        if (items.isEmpty()) {
             // TODO: Show a toast.
             finish()
             return
@@ -102,12 +112,11 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         // This will set up window flags.
         systemUiHelper.show()
         adapter = ImageViewerAdapter(viewLifecycleOwner) { systemUiHelper.toggle() }
-
-        val items = paths.map {
-            ImageViewerAdapter.ViewerItem(it, PlayerWrapper())
-        }
-
         adapter.replace(items)
+
+        // Mark the initial item for auto play so we don't have to manually press the play button.
+        items[args.position].player.markForInitialAutoPlay()
+
         binding.viewPager.adapter = adapter
         // ViewPager saves its position and will restore it later.
         binding.viewPager.setCurrentItem(args.position, false)
@@ -137,7 +146,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
 
-        outState.putState(State(paths))
+        outState.putState(State(items))
     }
 
     override fun onCreateOptionsMenu(menu: Menu, inflater: MenuInflater) {
@@ -163,6 +172,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
         ConfirmDeleteDialogFragment.show(currentPath, this)
     }
 
+    @RequiresApi(Build.VERSION_CODES.N)
     override fun delete(path: Path) {
         try {
             path.delete()
@@ -171,18 +181,16 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
             showToast(e.toString())
             return
         }
-        paths.removeAll(listOf(path))
-        if (paths.isEmpty()) {
+        items.removeIf { item -> item.path == path }
+        if (items.isEmpty()) {
             finish()
             return
         }
-        adapter.replace(paths.map {
-            ImageViewerAdapter.ViewerItem(it, PlayerWrapper())
-        })
+        adapter.replace(items)
         // ViewPager only asynchronously sets current item to 0, which isn't a desirable behavior
         // for us and will make updateTitle() crash for index out of bounds.
-        if (binding.viewPager.currentItem > paths.lastIndex) {
-            binding.viewPager.currentItem = paths.lastIndex
+        if (binding.viewPager.currentItem > items.lastIndex) {
+            binding.viewPager.currentItem = items.lastIndex
         }
         updateTitle()
     }
@@ -190,7 +198,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     private fun updateTitle() {
         val path = currentPath
         requireActivity().title = path.fileName.toString()
-        val size = paths.size
+        val size = items.size
         binding.toolbar.subtitle = if (size > 1) {
             getString(
                 R.string.image_viewer_subtitle_format, binding.viewPager.currentItem + 1, size
@@ -209,11 +217,11 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     }
 
     private val currentPath: Path
-        get() = paths[binding.viewPager.currentItem]
+        get() = items[binding.viewPager.currentItem].path
 
     @Parcelize
     class Args(val intent: Intent, val position: Int) : ParcelableArgs
 
     @Parcelize
-    private class State(val paths: @WriteWith<ParcelableListParceler> List<Path>) : ParcelableState
+    private class State(val paths: @WriteWith<ParcelableListParceler> List<ImageViewerAdapter.ViewerItem>) : ParcelableState
 }

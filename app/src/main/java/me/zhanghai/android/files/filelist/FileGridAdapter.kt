@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.filelist
 
 import android.text.TextUtils
+import android.view.View.GONE
 import android.view.View.VISIBLE
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
@@ -67,7 +68,6 @@ class FileGridAdapter(
             _nameEllipsize = value
             notifyItemRangeChanged(0, itemCount, PAYLOAD_STATE_CHANGED)
         }
-
     fun replaceSelectedFiles(files: FileItemSet) {
         val changedFiles = fileItemSetOf()
         val iterator = selectedFiles.iterator()
@@ -369,7 +369,8 @@ class FileGridAdapter(
         binding.iconImage.isVisible = true
         val supportsThumbnail = file.supportsThumbnail
         val attributes = file.attributes
-        if (supportsThumbnail) {
+        if (supportsThumbnail && !file.mimeType.isAudio) {
+            binding.iconContainer.visibility = GONE
             binding.thumbnailContainer.visibility = VISIBLE
             binding.photoView.apply {
                 loadAny(path to file.attributes) {
@@ -393,6 +394,7 @@ class FileGridAdapter(
                 }
             }
         } else {
+            binding.thumbnailContainer.visibility = GONE
             binding.iconContainer.visibility = VISIBLE
             binding.tileIcon.apply {
                 load(file.mimeType.iconRes)

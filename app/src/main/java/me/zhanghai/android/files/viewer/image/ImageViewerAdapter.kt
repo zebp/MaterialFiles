@@ -6,6 +6,7 @@
 package me.zhanghai.android.files.viewer.image
 
 import android.graphics.BitmapFactory
+import android.os.Parcelable
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.view.isVisible
@@ -26,6 +27,8 @@ import java8.nio.file.attribute.BasicFileAttributes
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.parcelize.Parcelize
+import kotlinx.parcelize.RawValue
 import me.zhanghai.android.files.coil.fadeIn
 import me.zhanghai.android.files.databinding.ImageViewerItemBinding
 import me.zhanghai.android.files.file.*
@@ -217,7 +220,8 @@ class ImageViewerAdapter(
         private const val MAX_BITMAP_SIZE = 100 * 1024 * 1024
     }
 
-    class ViewerItem(val path: Path, var player: PlayerWrapper)
+    @Parcelize
+    class ViewerItem(val path: @RawValue Path, var player: PlayerWrapper) : Parcelable
 
     class ViewHolder(val binding: ImageViewerItemBinding) : RecyclerView.ViewHolder(binding.root)
 

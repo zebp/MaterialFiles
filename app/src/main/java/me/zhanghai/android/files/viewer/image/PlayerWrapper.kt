@@ -2,11 +2,14 @@ package me.zhanghai.android.files.viewer.image
 
 import android.content.Context
 import android.net.Uri
+import android.os.Parcelable
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
+import kotlinx.parcelize.Parcelize
 
-class PlayerWrapper {
+@Parcelize
+class PlayerWrapper : Parcelable {
     /**
      * If the player should be marked to play when ready, this prevents a logical data race where
      * the video tapped on doesn't auto play.

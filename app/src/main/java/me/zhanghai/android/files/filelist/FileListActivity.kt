@@ -30,11 +30,16 @@ class FileListActivity : AppActivity() {
         // Calls ensureSubDecor().
         findViewById<View>(android.R.id.content)
 
-        val prev: Boolean = Settings.FILE_LIST_USE_GRID_VIEW.valueCompat
-
+        var prev: Boolean = Settings.FILE_LIST_USE_GRID_VIEW.valueCompat
         Settings.FILE_LIST_USE_GRID_VIEW.observeForever {
             if (it == prev) {
                 return@observeForever
+            }
+
+            prev = it
+
+            supportFragmentManager.commit {
+                remove(fragment)
             }
 
             if (it == true) {

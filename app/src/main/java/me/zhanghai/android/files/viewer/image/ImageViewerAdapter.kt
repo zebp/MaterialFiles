@@ -52,6 +52,7 @@ class ImageViewerAdapter(
         val item = getItem(position)
         val binding = holder.binding
         binding.image.setOnPhotoTapListener { view, _, _ -> listener(view) }
+        binding.gif.setOnClickListener(listener)
         binding.video.setOnClickListener(listener)
         binding.largeImage.setOnClickListener(listener)
         loadImage(binding, item)
@@ -62,6 +63,7 @@ class ImageViewerAdapter(
 
         val binding = holder.binding
         binding.image.clear()
+        binding.gif.clear()
         binding.largeImage.recycle()
         binding.video.player?.release()
     }
@@ -79,6 +81,7 @@ class ImageViewerAdapter(
     private fun loadImage(binding: ImageViewerItemBinding, item: ViewerItem) {
         binding.progress.fadeInUnsafe(true)
         binding.errorText.fadeOutUnsafe()
+        binding.gif.isVisible = false
         binding.video.isVisible = false
         binding.image.isVisible = false
         binding.largeImage.isVisible = false
@@ -111,6 +114,19 @@ class ImageViewerAdapter(
         imageInfo: ImageInfo
     ) {
         when {
+            imageInfo.mimeType.value == "image/gif" -> {
+                binding.gif.apply {
+                    isVisible = true
+                    loadAny(item.path to imageInfo.attributes) {
+                        size(OriginalSize)
+                        fadeIn(context.shortAnimTime)
+                        listener(
+                            onSuccess = { _, _ -> binding.progress.fadeOutUnsafe() },
+                            onError = { _, e -> showError(binding, e) }
+                        )
+                    }
+                }
+            }
             imageInfo.mimeType.isVideo -> {
                 item.player.create(binding.video.context, item.path.fileProviderUri)
                 binding.video.isVisible = true

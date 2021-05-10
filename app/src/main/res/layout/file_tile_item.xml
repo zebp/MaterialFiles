@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!--
+  ~ Copyright (c) 2018 Hai Zhang <dreaming.in.code.zh@gmail.com>
+  ~ All Rights Reserved.
+  -->
+
+<me.zhanghai.android.files.ui.CheckableForegroundLinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/itemLayout"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:foreground="?selectableItemBackground"
+    android:gravity="center_vertical"
+    android:orientation="vertical">
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/thumbnailContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="@dimen/screen_edge_margin_minus_4dp"
+        android:layout_marginLeft="@dimen/screen_edge_margin_minus_4dp"
+        android:layout_marginRight="@dimen/screen_edge_margin_minus_4dp"
+        android:visibility="gone"
+        app:cardCornerRadius="15dp"
+        app:cardElevation="0dp">
+
+        <me.zhanghai.android.files.ui.SquareImageView
+            android:id="@+id/photoView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:scaleType="centerCrop" />
+    </androidx.cardview.widget.CardView>
+
+    <androidx.cardview.widget.CardView
+        android:id="@+id/iconContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginLeft="@dimen/screen_edge_margin_minus_4dp"
+        android:layout_marginTop="@dimen/screen_edge_margin_minus_4dp"
+        android:layout_marginRight="@dimen/screen_edge_margin_minus_4dp"
+        android:visibility="gone"
+        app:cardBackgroundColor="#00FFFFFF"
+        app:cardCornerRadius="15dp"
+        app:cardElevation="0dp">
+
+        <me.zhanghai.android.files.ui.SquareImageView
+            android:id="@+id/tileIcon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:layout_gravity="center"
+            android:padding="30dp"
+            android:scaleType="centerCrop" />
+    </androidx.cardview.widget.CardView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/two_line_list_item_height"
+        android:foreground="?selectableItemBackground"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <FrameLayout
+            android:id="@+id/iconLayout"
+            android:layout_width="@dimen/touch_target_size"
+            android:layout_height="@dimen/touch_target_size"
+            android:layout_marginStart="@dimen/screen_edge_margin_minus_4dp"
+            android:clipToPadding="false"
+            android:duplicateParentState="true"
+            android:padding="@dimen/touch_target_large_icon_padding">
+
+            <me.zhanghai.android.files.ui.DisabledAlphaImageView
+                android:id="@+id/iconImage"
+                android:layout_width="@dimen/icon_size"
+                android:layout_height="@dimen/icon_size"
+                android:layout_gravity="center"
+                android:duplicateParentState="true"
+                android:scaleType="centerCrop" />
+
+            <me.zhanghai.android.files.ui.DisabledAlphaImageView
+                android:id="@+id/thumbnailImage"
+                android:layout_width="@dimen/large_icon_size"
+                android:layout_height="@dimen/large_icon_size"
+                android:duplicateParentState="true"
+                android:scaleType="centerCrop" />
+
+            <me.zhanghai.android.files.ui.DisabledAlphaImageView
+                android:id="@+id/badgeImage"
+                android:layout_width="@dimen/badge_size"
+                android:layout_height="@dimen/badge_size"
+                android:layout_gravity="end|bottom"
+                android:background="@drawable/badge_background_18dp"
+                android:duplicateParentState="true" />
+
+            <me.zhanghai.android.files.ui.DisabledAlphaImageView
+                android:layout_width="@dimen/badge_size"
+                android:layout_height="@dimen/badge_size"
+                android:layout_gravity="end|bottom"
+                android:duplicateParentState="true"
+                android:src="@drawable/checkable_badge_18dp" />
+        </FrameLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:layout_marginEnd="@dimen/content_start_from_screen_edge_margin_minus_44dp"
+            android:duplicateParentState="true"
+            android:orientation="vertical">
+
+            <!-- Lint says android:ellipsize="middle" and android:maxLines="1" crashes. -->
+            <TextView
+                android:id="@+id/nameText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/content_start_from_screen_edge_margin_minus_44dp"
+                android:duplicateParentState="true"
+                android:marqueeRepeatLimit="marquee_forever"
+                android:singleLine="true"
+                android:textAppearance="@style/TextAppearance.AppCompat.Subhead" />
+
+            <me.zhanghai.android.files.ui.AutoGoneTextView
+                android:id="@+id/descriptionText"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginEnd="@dimen/content_start_from_screen_edge_margin_minus_44dp"
+                android:duplicateParentState="true"
+                android:ellipsize="end"
+                android:maxLines="1"
+                android:textAppearance="@style/TextAppearance.AppCompat.Body1"
+                android:textColor="?android:textColorSecondary" />
+
+        </LinearLayout>
+
+        <ImageButton
+            android:id="@+id/menuButton"
+            android:layout_width="@dimen/touch_target_size"
+            android:layout_height="@dimen/touch_target_size"
+            android:background="@drawable/selectable_item_background_oval"
+            android:src="@drawable/more_vertical_icon_white_24dp"
+            app:tint="?colorControlNormal" />
+    </LinearLayout>
+
+    <!--
+      ~ Cannot use android:duplicateParentState="true" because a button needs to have its own
+      ~ pressed state, etc. Necessary states will be duplicated manually in the adapter
+      ~ implementation.
+      -->
+
+</me.zhanghai.android.files.ui.CheckableForegroundLinearLayout>

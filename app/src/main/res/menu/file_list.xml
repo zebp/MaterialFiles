@@ -87,6 +87,13 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/action_use_grid_view"
+        android:orderInCategory="100"
+        android:title="@string/file_list_action_use_grid_view"
+        android:checkable="true"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/action_share"
         android:orderInCategory="100"
         android:title="@string/share"

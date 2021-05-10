@@ -50,6 +50,12 @@ object Settings {
             R.bool.pref_default_value_file_list_show_hidden_files
         )
 
+    val FILE_LIST_USE_GRID_VIEW: SettingLiveData<Boolean> =
+        BooleanSettingLiveData(
+            R.string.pref_key_file_list_use_grid_view,
+            R.bool.pref_default_value_file_list_use_grid_view
+        )
+
     val FILE_LIST_SORT_OPTIONS: SettingLiveData<FileSortOptions> =
         ParcelValueSettingLiveData(
             R.string.pref_key_file_list_sort_options,

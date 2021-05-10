@@ -10,28 +10,68 @@ import android.content.Intent
 import android.os.Bundle
 import android.view.View
 import androidx.activity.result.contract.ActivityResultContract
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.commit
 import java8.nio.file.Path
 import me.zhanghai.android.files.app.AppActivity
 import me.zhanghai.android.files.file.MimeType
+import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.util.createIntent
 import me.zhanghai.android.files.util.extraPath
 import me.zhanghai.android.files.util.putArgs
+import me.zhanghai.android.files.util.valueCompat
 
 class FileListActivity : AppActivity() {
-    private lateinit var fragment: FileListFragment
+    private lateinit var fragment: FileDisplayFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
         // Calls ensureSubDecor().
         findViewById<View>(android.R.id.content)
-        if (savedInstanceState == null) {
-            fragment = FileListFragment().putArgs(FileListFragment.Args(intent))
-            supportFragmentManager.commit { add(android.R.id.content, fragment) }
+
+        val prev: Boolean = Settings.FILE_LIST_USE_GRID_VIEW.valueCompat
+
+        Settings.FILE_LIST_USE_GRID_VIEW.observeForever {
+            if (it == prev) {
+                return@observeForever
+            }
+
+            if (it == true) {
+                if (savedInstanceState == null) {
+                    fragment = FileGridFragment().putArgs(FileGridFragment.Args(intent))
+                    supportFragmentManager.commit { add(android.R.id.content, fragment) }
+                } else {
+                    fragment = supportFragmentManager.findFragmentById(android.R.id.content)
+                            as FileGridFragment
+                }
+            } else {
+                if (savedInstanceState == null) {
+                    fragment = FileListFragment().putArgs(FileListFragment.Args(intent))
+                    supportFragmentManager.commit { add(android.R.id.content, fragment) }
+                } else {
+                    fragment = supportFragmentManager.findFragmentById(android.R.id.content)
+                            as FileListFragment
+                }
+            }
+        }
+
+        if (Settings.FILE_LIST_USE_GRID_VIEW.valueCompat) {
+            if (savedInstanceState == null) {
+                fragment = FileGridFragment().putArgs(FileGridFragment.Args(intent))
+                supportFragmentManager.commit { add(android.R.id.content, fragment) }
+            } else {
+                fragment = supportFragmentManager.findFragmentById(android.R.id.content)
+                        as FileGridFragment
+            }
         } else {
-            fragment = supportFragmentManager.findFragmentById(android.R.id.content)
-                as FileListFragment
+            if (savedInstanceState == null) {
+                fragment = FileListFragment().putArgs(FileListFragment.Args(intent))
+                supportFragmentManager.commit { add(android.R.id.content, fragment) }
+            } else {
+                fragment = supportFragmentManager.findFragmentById(android.R.id.content)
+                        as FileListFragment
+            }
         }
     }
 
@@ -68,5 +108,9 @@ class FileListActivity : AppActivity() {
 
         override fun parseResult(resultCode: Int, intent: Intent?): Path? =
             if (resultCode == RESULT_OK) intent?.extraPath else null
+    }
+
+    abstract class FileDisplayFragment : Fragment() {
+        abstract fun onBackPressed(): Boolean
     }
 }

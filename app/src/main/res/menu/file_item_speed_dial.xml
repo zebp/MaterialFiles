@@ -29,7 +29,7 @@
 
     <item
         android:id="@+id/action_rename"
-        android:icon="@android:drawable/ic_menu_edit"
+        android:icon="@drawable/edit_white_icon_24dp"
         android:title="@string/rename" />
 
     <item
@@ -44,7 +44,7 @@
 
     <item
         android:id="@+id/action_share"
-        android:icon="@android:drawable/ic_menu_share"
+        android:icon="@drawable/share_white_icon_24dp"
         android:title="@string/share" />
 
     <item
@@ -59,7 +59,7 @@
 
     <item
         android:id="@+id/action_create_shortcut"
-        android:icon="@drawable/directory_icon_white_24dp"
+        android:icon="@drawable/shortcut_icon_white_24dp"
         android:title="@string/file_item_action_create_shortcut" />
 
     <item

@@ -1331,6 +1331,11 @@ class FileGridFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
             R.menu.file_list_speed_dial
         }
 
+        binding.speedDialView.mainFabAnimationRotateAngle = if (files.size == 1) {
+            0F
+        } else {
+            135F
+        }
         binding.speedDialView.inflate(speedDialMenuId)
     }
 

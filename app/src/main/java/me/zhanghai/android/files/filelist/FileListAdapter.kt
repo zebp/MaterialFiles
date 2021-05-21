@@ -6,33 +6,36 @@
 package me.zhanghai.android.files.filelist
 
 import android.text.TextUtils
+import android.view.View
 import android.view.ViewGroup
 import androidx.appcompat.widget.PopupMenu
 import androidx.core.view.isVisible
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.RecyclerView
 import coil.clear
+import coil.load
 import coil.loadAny
+import coil.size.OriginalSize
 import java8.nio.file.Path
 import me.zhanghai.android.fastscroll.PopupTextProvider
 import me.zhanghai.android.files.R
 import me.zhanghai.android.files.databinding.FileItemBinding
-import me.zhanghai.android.files.file.FileItem
-import me.zhanghai.android.files.file.fileSize
-import me.zhanghai.android.files.file.formatShort
-import me.zhanghai.android.files.file.iconRes
+import me.zhanghai.android.files.databinding.FileTileItemBinding
+import me.zhanghai.android.files.file.*
 import me.zhanghai.android.files.provider.archive.isArchivePath
 import me.zhanghai.android.files.settings.Settings
 import me.zhanghai.android.files.ui.AnimatedListAdapter
 import me.zhanghai.android.files.ui.CheckableItemBackground
 import me.zhanghai.android.files.util.layoutInflater
 import me.zhanghai.android.files.util.valueCompat
+import java.lang.IllegalArgumentException
 import java.util.Comparator
 import java.util.Locale
 
 class FileListAdapter(
-    private val listener: Listener
-) : AnimatedListAdapter<FileItem, FileListAdapter.ViewHolder>(CALLBACK), PopupTextProvider {
+    private val listener: Listener,
+    private val useGridView: Boolean
+) : AnimatedListAdapter<FileItem, RecyclerView.ViewHolder>(CALLBACK), PopupTextProvider {
     private var isSearching = false
 
     private lateinit var _comparator: Comparator<FileItem>
@@ -144,22 +147,223 @@ class FileListAdapter(
         }
     }
 
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder =
-        ViewHolder(
-            FileItemBinding.inflate(parent.context.layoutInflater, parent, false)
-        ).apply {
-            binding.itemLayout.background =
-                CheckableItemBackground.create(binding.itemLayout.context)
-            popupMenu = PopupMenu(binding.menuButton.context, binding.menuButton)
-                .apply { inflate(R.menu.file_item) }
-            binding.menuButton.setOnClickListener { popupMenu.show() }
+    override fun getItemViewType(position: Int): Int =
+        if (getItem(position).attributes.isDirectory || !this.useGridView) {
+            0
+        } else {
+            1
         }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int) {
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
+        when (viewType) {
+            0 -> ViewHolder(
+                FileItemBinding.inflate(parent.context.layoutInflater, parent, false)
+            ).apply {
+                binding.itemLayout.background =
+                    CheckableItemBackground.create(binding.itemLayout.context)
+                popupMenu = PopupMenu(binding.menuButton.context, binding.menuButton)
+                    .apply { inflate(R.menu.file_item) }
+                binding.menuButton.setOnClickListener { popupMenu.show() }
+
+                if (useGridView) {
+                    binding.menuButton.isVisible = false
+                    binding.menuButton.maxWidth = R.dimen.zero_width
+                }
+            }
+            1 -> FileViewHolder (
+                FileTileItemBinding.inflate(parent.context.layoutInflater, parent, false)
+            ).apply {
+                binding.itemLayout.background =
+                    CheckableItemBackground.create(binding.itemLayout.context)
+                popupMenu = PopupMenu(binding.menuButton.context, binding.menuButton)
+                    .apply { inflate(R.menu.file_item) }
+
+                binding.menuButton.isVisible = false
+                binding.menuButton.maxWidth = R.dimen.zero_width
+                binding.menuButton.setOnClickListener { popupMenu.show() }
+            }
+            else -> throw IllegalArgumentException()
+        }
+
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
         throw UnsupportedOperationException()
     }
 
-    override fun onBindViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int, payloads: List<Any>) {
+        when (holder) {
+            is ViewHolder -> {
+                bindListViewHolder(holder, position, payloads)
+            }
+            is FileViewHolder -> {
+                bindFileViewHolder(holder, position, payloads)
+            }
+        }
+    }
+
+    private fun bindFileViewHolder(holder: FileViewHolder, position: Int, payloads: List<Any>) {
+        val file = getItem(position)
+        val binding = holder.binding
+        val isDirectory = file.attributes.isDirectory
+        val enabled = isFileSelectable(file) || isDirectory
+        binding.itemLayout.isEnabled = enabled
+        binding.menuButton.isEnabled = enabled
+        val menu = holder.popupMenu.menu
+        val path = file.path
+        val hasPickOptions = pickOptions != null
+        val isReadOnly = path.fileSystem.isReadOnly
+        menu.findItem(R.id.action_cut).isVisible = !hasPickOptions && !isReadOnly
+        menu.findItem(R.id.action_copy).isVisible = !hasPickOptions
+        val checked = file in selectedFiles
+        binding.itemLayout.isChecked = checked
+        val nameEllipsize = nameEllipsize
+//        binding.nameText.ellipsize = nameEllipsize
+//        binding.nameText.isSelected = nameEllipsize == TextUtils.TruncateAt.MARQUEE
+        if (payloads.isNotEmpty()) {
+            return
+        }
+
+        bindViewHolderAnimation(holder)
+        binding.itemLayout.setOnClickListener {
+            if (selectedFiles.isEmpty()) {
+                listener.openFile(file)
+            } else {
+                selectFile(file)
+            }
+        }
+        binding.itemLayout.setOnLongClickListener {
+            if (selectedFiles.isEmpty()) {
+                selectFile(file)
+            } else {
+                listener.openFile(file)
+            }
+            true
+        }
+        binding.iconLayout.setOnClickListener { selectFile(file) }
+        binding.iconImage.setImageResource(file.mimeType.iconRes)
+        binding.iconImage.isVisible = true
+        val supportsThumbnail = file.supportsThumbnail
+        val attributes = file.attributes
+        if (supportsThumbnail && !file.mimeType.isAudio) {
+            binding.iconContainer.visibility = View.GONE
+            binding.thumbnailContainer.visibility = View.VISIBLE
+            binding.photoView.apply {
+                loadAny(path to file.attributes) {
+                    size(OriginalSize)
+                }
+
+                setOnClickListener {
+                    if (selectedFiles.isEmpty()) {
+                        listener.openFile(file)
+                    } else {
+                        selectFile(file)
+                    }
+                }
+                setOnLongClickListener {
+                    if (selectedFiles.isEmpty()) {
+                        selectFile(file)
+                    } else {
+                        listener.openFile(file)
+                    }
+                    true
+                }
+            }
+        } else {
+            binding.thumbnailContainer.visibility = View.GONE
+            binding.iconContainer.visibility = View.VISIBLE
+            binding.tileIcon.apply {
+                load(file.mimeType.iconRes)
+                isVisible = true
+            }
+        }
+        val badgeIconRes = if (file.attributesNoFollowLinks.isSymbolicLink) {
+            if (file.isSymbolicLinkBroken) {
+                R.drawable.error_badge_icon_18dp
+            } else {
+                R.drawable.symbolic_link_badge_icon_18dp
+            }
+        } else {
+            null
+        }
+        val hasBadge = badgeIconRes != null
+        binding.badgeImage.isVisible = hasBadge
+        if (hasBadge) {
+            binding.badgeImage.setImageResource(badgeIconRes!!)
+        }
+        binding.nameText.text = file.name
+        binding.descriptionText.text = if (isDirectory) {
+            null
+        } else {
+            val context = binding.descriptionText.context
+            val lastModificationTime = attributes.lastModifiedTime().toInstant()
+                .formatShort(context)
+            val size = attributes.fileSize.formatHumanReadable(context)
+            val descriptionSeparator = context.getString(R.string.file_item_description_separator)
+            listOf(lastModificationTime, size).joinToString(descriptionSeparator)
+        }
+        val isArchivePath = path.isArchivePath
+        menu.findItem(R.id.action_copy)
+            .setTitle(if (isArchivePath) R.string.file_item_action_extract else R.string.copy)
+        menu.findItem(R.id.action_delete).isVisible = !isReadOnly
+        menu.findItem(R.id.action_rename).isVisible = !isReadOnly
+        menu.findItem(R.id.action_extract).isVisible = file.isArchiveFile
+        menu.findItem(R.id.action_add_bookmark).isVisible = isDirectory
+        holder.popupMenu.setOnMenuItemClickListener {
+            when (it.itemId) {
+                R.id.action_open_with -> {
+                    listener.openFileWith(file)
+                    true
+                }
+                R.id.action_cut -> {
+                    listener.cutFile(file)
+                    true
+                }
+                R.id.action_copy -> {
+                    listener.copyFile(file)
+                    true
+                }
+                R.id.action_delete -> {
+                    listener.confirmDeleteFile(file)
+                    true
+                }
+                R.id.action_rename -> {
+                    listener.showRenameFileDialog(file)
+                    true
+                }
+                R.id.action_extract -> {
+                    listener.extractFile(file)
+                    true
+                }
+                R.id.action_archive -> {
+                    listener.showCreateArchiveDialog(file)
+                    true
+                }
+                R.id.action_share -> {
+                    listener.shareFile(file)
+                    true
+                }
+                R.id.action_copy_path -> {
+                    listener.copyPath(file)
+                    true
+                }
+                R.id.action_add_bookmark -> {
+                    listener.addBookmark(file)
+                    true
+                }
+                R.id.action_create_shortcut -> {
+                    listener.createShortcut(file)
+                    true
+                }
+                R.id.action_properties -> {
+                    listener.showPropertiesDialog(file)
+                    true
+                }
+                else -> false
+            }
+        }
+    }
+
+    private fun bindListViewHolder(holder: ViewHolder, position: Int, payloads: List<Any>) {
         val file = getItem(position)
         val binding = holder.binding
         val isDirectory = file.attributes.isDirectory
@@ -318,6 +522,10 @@ class FileListAdapter(
     }
 
     class ViewHolder(val binding: FileItemBinding) : RecyclerView.ViewHolder(binding.root) {
+        lateinit var popupMenu: PopupMenu
+    }
+
+    class FileViewHolder(val binding: FileTileItemBinding) : RecyclerView.ViewHolder(binding.root) {
         lateinit var popupMenu: PopupMenu
     }
 

@@ -42,41 +42,21 @@ class FileListActivity : AppActivity() {
                 remove(fragment)
             }
 
-            if (it == true) {
-                if (savedInstanceState == null) {
-                    fragment = FileGridFragment().putArgs(FileGridFragment.Args(intent))
-                    supportFragmentManager.commit { add(android.R.id.content, fragment) }
-                } else {
-                    fragment = supportFragmentManager.findFragmentById(android.R.id.content)
-                            as FileGridFragment
-                }
-            } else {
-                if (savedInstanceState == null) {
-                    fragment = FileListFragment().putArgs(FileListFragment.Args(intent))
-                    supportFragmentManager.commit { add(android.R.id.content, fragment) }
-                } else {
-                    fragment = supportFragmentManager.findFragmentById(android.R.id.content)
-                            as FileListFragment
-                }
-            }
-        }
-
-        if (Settings.FILE_LIST_USE_GRID_VIEW.valueCompat) {
             if (savedInstanceState == null) {
-                fragment = FileGridFragment().putArgs(FileGridFragment.Args(intent))
-                supportFragmentManager.commit { add(android.R.id.content, fragment) }
-            } else {
-                fragment = supportFragmentManager.findFragmentById(android.R.id.content)
-                        as FileGridFragment
-            }
-        } else {
-            if (savedInstanceState == null) {
-                fragment = FileListFragment().putArgs(FileListFragment.Args(intent))
+                fragment = FileListFragment().putArgs(FileListFragment.Args(intent, it))
                 supportFragmentManager.commit { add(android.R.id.content, fragment) }
             } else {
                 fragment = supportFragmentManager.findFragmentById(android.R.id.content)
                         as FileListFragment
             }
+        }
+
+        if (savedInstanceState == null) {
+            fragment = FileListFragment().putArgs(FileListFragment.Args(intent, Settings.FILE_LIST_USE_GRID_VIEW.valueCompat))
+            supportFragmentManager.commit { add(android.R.id.content, fragment) }
+        } else {
+            fragment = supportFragmentManager.findFragmentById(android.R.id.content)
+                    as FileListFragment
         }
     }
 

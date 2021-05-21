@@ -211,8 +211,8 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
             )
         }
         binding.swipeRefreshLayout.setOnRefreshListener { this.refresh() }
-        binding.recyclerView.layoutManager = GridLayoutManager(activity, /* TODO */ 1)
-        adapter = FileListAdapter(this)
+        binding.recyclerView.layoutManager = GridLayoutManager(activity, if (args.useGridView) { 2 } else { 1 })
+        adapter = FileListAdapter(this, args.useGridView)
         binding.recyclerView.adapter = adapter
         val fastScroller = ThemedFastScroller.create(binding.recyclerView)
         binding.recyclerView.setOnApplyWindowInsetsListener(
@@ -891,6 +891,7 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
 
     private fun selectAllFiles() {
         adapter.selectAllFiles()
+        updateFabIcon()
     }
 
     private fun onPasteStateChanged(pasteState: PasteState) {
@@ -1004,14 +1005,17 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
 
     override fun clearSelectedFiles() {
         viewModel.clearSelectedFiles()
+        updateFabIcon()
     }
 
     override fun selectFile(file: FileItem, selected: Boolean) {
         viewModel.selectFile(file, selected)
+        updateFabIcon()
     }
 
     override fun selectFiles(files: FileItemSet, selected: Boolean) {
         viewModel.selectFiles(files, selected)
+        updateFabIcon()
     }
 
     override fun openFile(file: FileItem) {
@@ -1330,6 +1334,30 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
             refresh()
         }
     }
+    
+    private fun updateFabIcon() {
+        val files = viewModel.selectedFiles
+        val speedDialIconId = if (files.size == 1) {
+            R.drawable.more_vertical_icon_white_24dp
+        } else {
+            R.drawable.add_icon_white_24dp
+        }
+
+        binding.speedDialView.setMainFabClosedDrawable(resources.getDrawable(speedDialIconId))
+
+        val speedDialMenuId = if (files.size == 1) {
+            R.menu.file_item_speed_dial
+        } else {
+            R.menu.file_list_speed_dial
+        }
+
+        binding.speedDialView.mainFabAnimationRotateAngle = if (files.size == 1) {
+            0F
+        } else {
+            135F
+        }
+        binding.speedDialView.inflate(speedDialMenuId)
+    }
 
     companion object {
         private const val ACTION_VIEW_DOWNLOADS =
@@ -1366,7 +1394,7 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
     }
 
     @Parcelize
-    class Args(val intent: Intent) : ParcelableArgs
+    class Args(val intent: Intent, val useGridView: Boolean) : ParcelableArgs
 
     private class Binding private constructor(
         val root: View,

@@ -134,7 +134,7 @@ class ImageViewerFragment : Fragment(), ConfirmDeleteDialogFragment.Listener {
     override fun onViewStateRestored(savedInstanceState: Bundle?) {
         super.onViewStateRestored(savedInstanceState)
 
-        if (paths.isEmpty()) {
+        if (items.isEmpty()) {
             // We did finish the activity in onActivityCreated(), however we will still be called
             // here before the activity is actually finished.
             return

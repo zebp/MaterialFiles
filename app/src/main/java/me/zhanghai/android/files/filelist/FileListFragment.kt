@@ -114,6 +114,7 @@ import me.zhanghai.android.files.util.valueCompat
 import me.zhanghai.android.files.util.viewModels
 import me.zhanghai.android.files.util.withChooser
 import me.zhanghai.android.files.viewer.image.ImageViewerActivity
+import kotlin.properties.Delegates
 
 class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayout.Listener, FileListAdapter.Listener,
     OpenApkDialogFragment.Listener, ConfirmDeleteFilesDialogFragment.Listener,
@@ -149,6 +150,8 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
     private lateinit var bottomActionMode: ToolbarActionMode
 
     private lateinit var adapter: FileListAdapter
+
+    private var lastDirectoryIndex by Delegates.notNull<Int>()
 
     private val debouncedSearchRunnable = DebouncedRunnable(Handler(Looper.getMainLooper()), 1000) {
         if (!isResumed || !viewModel.isSearchViewExpanded) {
@@ -550,6 +553,8 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
             viewModel.pendingState
                 ?.let { binding.recyclerView.layoutManager!!.onRestoreInstanceState(it) }
         }
+
+        this.lastDirectoryIndex = files?.sortedWith(adapter.comparator)?.indexOfLast { it.attributes.isDirectory } ?: -1
     }
 
     private fun getSubtitle(files: List<FileItem>): String {
@@ -653,9 +658,6 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
         val layoutManager = binding.recyclerView.layoutManager as GridLayoutManager
         layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
             override fun getSpanSize(position: Int): Int {
-                val files = viewModel.fileListStateful.value ?: arrayListOf()
-                val lastDirectoryIndex = files.sortedWith(adapter.comparator).indexOfLast { it.attributes.isDirectory }
-
                 if (!useGridView || lastDirectoryIndex and 1 == 1) {
                     return 1;
                 }

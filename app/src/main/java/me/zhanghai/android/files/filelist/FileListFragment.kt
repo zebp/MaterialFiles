@@ -306,6 +306,11 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
         Settings.FILE_LIST_SHOW_HIDDEN_FILES.observe(viewLifecycleOwner) {
             onShowHiddenFilesChanged(it)
         }
+        Settings.FILE_LIST_USE_GRID_VIEW.observe(viewLifecycleOwner) {
+            onUseGridViewChanged(it)
+        }
+
+        updateSpanSizeLookup(args.useGridView)
     }
 
     override fun onResume() {
@@ -631,6 +636,38 @@ class FileListFragment : FileListActivity.FileDisplayFragment(), BreadcrumbLayou
     private fun onShowHiddenFilesChanged(showHiddenFiles: Boolean) {
         updateAdapterFileList()
         updateShowHiddenFilesMenuItem()
+    }
+
+    private fun onUseGridViewChanged(useGridView: Boolean) {
+        binding.recyclerView.layoutManager = GridLayoutManager(activity, if (useGridView) { 2 } else { 1 })
+        adapter.useGridView = useGridView
+
+        updateAdapterFileList()
+        updateSpanSizeLookup(useGridView)
+        updateUseGridViewMenuItem()
+
+        adapter.refresh()
+    }
+
+    private fun updateSpanSizeLookup(useGridView: Boolean) {
+        val layoutManager = binding.recyclerView.layoutManager as GridLayoutManager
+        layoutManager.spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+            override fun getSpanSize(position: Int): Int {
+                val files = viewModel.fileListStateful.value ?: arrayListOf()
+                val lastDirectoryIndex = files.sortedWith(adapter.comparator).indexOfLast { it.attributes.isDirectory }
+
+                if (!useGridView || lastDirectoryIndex and 1 == 1) {
+                    return 1;
+                }
+
+                val span = when (position) {
+                    lastDirectoryIndex -> 2
+                    else -> 1
+                }
+
+                return span
+            }
+        }
     }
 
     private fun updateAdapterFileList() {

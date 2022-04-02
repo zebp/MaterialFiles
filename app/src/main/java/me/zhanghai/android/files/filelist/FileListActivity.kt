@@ -30,27 +30,6 @@ class FileListActivity : AppActivity() {
         // Calls ensureSubDecor().
         findViewById<View>(android.R.id.content)
 
-        var prev: Boolean = Settings.FILE_LIST_USE_GRID_VIEW.valueCompat
-        Settings.FILE_LIST_USE_GRID_VIEW.observeForever {
-            if (it == prev) {
-                return@observeForever
-            }
-
-            prev = it
-
-            supportFragmentManager.commit {
-                remove(fragment)
-            }
-
-            if (savedInstanceState == null) {
-                fragment = FileListFragment().putArgs(FileListFragment.Args(intent, it))
-                supportFragmentManager.commit { add(android.R.id.content, fragment) }
-            } else {
-                fragment = supportFragmentManager.findFragmentById(android.R.id.content)
-                        as FileListFragment
-            }
-        }
-
         if (savedInstanceState == null) {
             fragment = FileListFragment().putArgs(FileListFragment.Args(intent, Settings.FILE_LIST_USE_GRID_VIEW.valueCompat))
             supportFragmentManager.commit { add(android.R.id.content, fragment) }

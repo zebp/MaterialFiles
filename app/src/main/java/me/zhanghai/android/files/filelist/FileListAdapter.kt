@@ -34,7 +34,7 @@ import java.util.Locale
 
 class FileListAdapter(
     private val listener: Listener,
-    private val useGridView: Boolean
+    var useGridView: Boolean
 ) : AnimatedListAdapter<FileItem, RecyclerView.ViewHolder>(CALLBACK), PopupTextProvider {
     private var isSearching = false
 
@@ -148,10 +148,12 @@ class FileListAdapter(
     }
 
     override fun getItemViewType(position: Int): Int =
-        if (getItem(position).attributes.isDirectory || !this.useGridView) {
+        if (!this.useGridView) {
             0
-        } else {
+        } else if (getItem(position).attributes.isDirectory) {
             1
+        } else {
+            2
         }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder =
@@ -164,13 +166,19 @@ class FileListAdapter(
                 popupMenu = PopupMenu(binding.menuButton.context, binding.menuButton)
                     .apply { inflate(R.menu.file_item) }
                 binding.menuButton.setOnClickListener { popupMenu.show() }
-
-                if (useGridView) {
-                    binding.menuButton.isVisible = false
-                    binding.menuButton.maxWidth = R.dimen.zero_width
-                }
             }
-            1 -> FileViewHolder (
+            1 -> ViewHolder(
+                FileItemBinding.inflate(parent.context.layoutInflater, parent, false)
+            ).apply {
+                binding.itemLayout.background =
+                    CheckableItemBackground.create(binding.itemLayout.context)
+                popupMenu = PopupMenu(binding.menuButton.context, binding.menuButton)
+                    .apply { inflate(R.menu.file_item) }
+                binding.menuButton.setOnClickListener { popupMenu.show() }
+                binding.menuButton.isVisible = false
+                binding.menuButton.maxWidth = R.dimen.zero_width
+            }
+            2 -> FileViewHolder (
                 FileTileItemBinding.inflate(parent.context.layoutInflater, parent, false)
             ).apply {
                 binding.itemLayout.background =

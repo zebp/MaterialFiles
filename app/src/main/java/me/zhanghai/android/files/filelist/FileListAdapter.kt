@@ -257,7 +257,7 @@ class FileListAdapter(
             binding.thumbnailContainer.visibility = View.VISIBLE
             binding.photoView.apply {
                 loadAny(path to file.attributes) {
-                    size(OriginalSize)
+                    size(512, 512)
                 }
 
                 setOnClickListener {

@@ -139,7 +139,6 @@ class ImageViewerAdapter(
                 binding.image.apply {
                     isVisible = true
                     loadAny(item.path to imageInfo.attributes) {
-                        size(OriginalSize)
                         fadeIn(context.shortAnimTime)
                         listener(
                             onSuccess = { _, _ -> binding.progress.fadeOutUnsafe() },
